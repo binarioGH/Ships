@@ -2,7 +2,7 @@
 #include <list>
 #include <windows.h>
 #include <conio.h>
-
+using namespace std;
 #define W 119
 #define S 115
 #define A 97
@@ -17,12 +17,46 @@ void hideCursor(void);
 void drawBorders(int bx, int by);
 void cls(void);
 
+class Bullet{
+private:
+	int x,y;
+	int dx, dy;
+	void collition(void);
+public:
+	Bullet(int _x, int _y, int _dx, int _dy){
+		x = _x;
+		y = _y;
+		dx = _dx;
+		dy = _dy;
+	}
+	void move(void);
+	int X(void){return x;}
+	int Y(void){return y;}
+	bool death = false;
+};
+void Bullet::collition(void){
+	if((x>=78 || x<=2) || (y>=22 || y <= 2)){
+		death = true;
+	}
+	return;
+}
+void Bullet::move(void){
+	gotoxy(x,y);printf(" ");
+	x += dx;
+	y += dy;
+	gotoxy(x,y);printf("%c", 43);
+	Bullet::collition();
+	return;
+}
+
 class Ship{
 private:
 	int x,y;
 	int dx=0, dy=-1;
 	int sprite =  UP;
+	int eX, eY, DX, DY;
 	void collition(void);
+	void Bshoot(int des, int mdes, int mv1, int mv2);
 public:
 	Ship(int _x, int _y){
 		x = _x;
@@ -36,8 +70,14 @@ public:
 	}
 	~Ship(void){}
 	void keyMove(void);
+	void botMove(int enemyX, int enemyY, int enemyXdir, int enemyYdir);
 	void move(int key);
+	int X(void){return x;}
+	int Y(void){return y;}
+	int XD(void){return dx;}
+	int YD(void){return dy;}
 	bool death = false;
+	bool shooting = false;
 };
 void Ship::keyMove(void){
 	char k = 'k';
@@ -54,6 +94,7 @@ void Ship::move(int key){
 		case S:dx=0;dy=1;sprite=DOWN;break;
 		case A:dx=-1;dy=0;sprite=LEFT;break;
 		case D:dx=1;dy=-0;sprite=RIGHT;break;
+		case 32:shooting = true;break;
 	}
 	Ship::collition();
 	x+=dx;
@@ -69,15 +110,75 @@ void Ship::collition(void){
 	}
 	return;
 }
+void Ship::botMove(int enemyX, int enemyY,int enemyXdir,int enemyYdir){
+	eX = enemyX;
+	eY = enemyY;
+	DX = enemyXdir;
+	DY = enemyYdir;
+	int key=0;
+	int des = rand()%2;
+	int mdes = rand()%2;
+	if((eY == y) && (DX == dx)){
+		Ship::Bshoot(des, mdes, W, S);
+		return;
+	}
+	else if((eX == x) && (DY == dy)){
+		Ship::Bshoot(des, mdes, A,D);
+		return;
+	}
+	if(x == 3 || x == 76){
+		dx *=-1;
+	}
+	if(y == 3 || y == 21){
+		dy *=-1;
+	}
+	
+	return;
+}
 
+void Ship::Bshoot(int des, int mdes, int mv1, int mv2){
+	if(des == 0){
+		shooting = true;
+	}
+	else{
+		if(mdes){
+			Ship::move(mv1);
+		}
+		else{
+			Ship::move(mv2);
+		}
+	}
+	return;
+}
 
 int main(){
+	list<Bullet*> bullets;
+	list<Bullet*>::iterator bit; //bit significa bullet iterator
 	hideCursor();
 	cls();
 	drawBorders(205,219);
-	Ship ms (39,11);
+	Ship ms (39,18);
+	Ship es (39, 6);
 	while(!ms.death){
 		ms.keyMove();
+		es.botMove(ms.X(), ms.Y(), ms.XD(), ms.YD());
+		if(ms.shooting){
+			bullets.push_back(new Bullet(ms.X()+(ms.XD()*2),ms.Y()+(ms.YD() *2),ms.XD(), ms.YD()));
+            ms.shooting = false;			
+		}
+		for(bit=bullets.begin();bit!=bullets.end();bit++){
+			(*bit)->move();
+			if((ms.X() == (*bit)->X()) && (ms.Y() == (*bit)->Y())){
+				ms.death = true;
+			}
+			else if((es.X() == (*bit)->X()) && (es.Y() == (*bit)->Y())){
+				es.death = true;
+			}
+			if((*bit)->death){
+				delete(*bit);
+				bit = bullets.erase(bit);
+			}
+		}
 		Sleep(100);
 	}
 
