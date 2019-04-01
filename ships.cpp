@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <list>
 #include <windows.h>
+#include <string>
 #include <conio.h>
 using namespace std;
 #define W 119
@@ -170,7 +171,7 @@ int main(){
 	drawBorders(205,219);
 	Ship ms (39,18);
 	Ship es (39, 6);
-	while(!ms.death){
+	while(!ms.death && !es.death){
 		ms.keyMove();
 		es.botMove(ms.X(), ms.Y(), ms.XD(), ms.YD());
 		if(ms.shooting){
@@ -196,7 +197,17 @@ int main(){
 		}
 		Sleep(100);
 	}
-
+	cls();
+	drawBorders(190, 190);
+	gotoxy(35, 12);
+	if(es.death){
+		printf(" You  Won");
+	}
+	else{
+		printf(" You Lost");
+	}
+	Sleep(3000);
+	gotoxy(0,24);
 	return 0;
 }
 
