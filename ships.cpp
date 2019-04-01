@@ -56,7 +56,7 @@ private:
 	int sprite =  UP;
 	int eX, eY, DX, DY;
 	void collition(void);
-	void Bshoot(int des, int mdes, int mv1, int mv2);
+	
 public:
 	Ship(int _x, int _y){
 		x = _x;
@@ -115,39 +115,50 @@ void Ship::botMove(int enemyX, int enemyY,int enemyXdir,int enemyYdir){
 	eY = enemyY;
 	DX = enemyXdir;
 	DY = enemyYdir;
-	int key=0;
+	int key = 0;
 	int des = rand()%2;
 	int mdes = rand()%2;
-	if((eY == y) && (DX == dx)){
-		Ship::Bshoot(des, mdes, W, S);
-		return;
-	}
-	else if((eX == x) && (DY == dy)){
-		Ship::Bshoot(des, mdes, A,D);
-		return;
-	}
-	if(x == 3 || x == 76){
-		dx *=-1;
-	}
-	if(y == 3 || y == 21){
-		dy *=-1;
-	}
-	
-	return;
-}
-
-void Ship::Bshoot(int des, int mdes, int mv1, int mv2){
-	if(des == 0){
-		shooting = true;
-	}
-	else{
-		if(mdes){
-			Ship::move(mv1);
+	if(x == eX && ((DX == dx && dy == DY) || (dx == DX*-1 && DY*-1 == dy))){
+		if(mdes == 0){
+			key = 32;
+			return;
 		}
 		else{
-			Ship::move(mv2);
+			if(des == 1){
+				key = A;
+			}
+			else{
+				key = D;
+			}
 		}
 	}
+	if(y == eY && ((DX == dx && dy == DY) || (dx == DX*-1 && DY*-1 == dy))){
+		if(mdes == 0){
+			key = 32;
+			return;
+		}
+		else{
+			if(des == 1){
+				key = W;
+			}
+			else{
+				key = S;
+			}
+		}
+	}
+	if(x == 3){
+		key = D;
+	}
+	else if(x == 77){
+		key = A;
+	}
+	if(y == 3){
+		key = S;
+	}
+	else if(y == 21){
+		key = W;
+	}
+	Ship::move(key);
 	return;
 }
 
@@ -165,6 +176,10 @@ int main(){
 		if(ms.shooting){
 			bullets.push_back(new Bullet(ms.X()+(ms.XD()*2),ms.Y()+(ms.YD() *2),ms.XD(), ms.YD()));
             ms.shooting = false;			
+		}
+		if(es.shooting){
+			bullets.push_back(new Bullet(es.X()+(es.XD()*2),es.Y()+(es.YD() *2),es.XD(), es.YD()));
+            es.shooting = false;	
 		}
 		for(bit=bullets.begin();bit!=bullets.end();bit++){
 			(*bit)->move();
