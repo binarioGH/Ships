@@ -36,7 +36,7 @@ public:
 	bool death = false;
 };
 void Bullet::collition(void){
-	if((x>=78 || x<=2) || (y>=22 || y <= 2)){
+	if((x>77 || x<3) || (y<3 || y>21)){
 		death = true;
 	}
 	return;
@@ -45,8 +45,10 @@ void Bullet::move(void){
 	gotoxy(x,y);printf(" ");
 	x += dx;
 	y += dy;
-	gotoxy(x,y);printf("%c", 43);
 	Bullet::collition();
+	if(!death){
+		gotoxy(x,y);printf("%c", 43);
+	}
 	return;
 }
 
@@ -57,7 +59,7 @@ private:
 	int sprite =  UP;
 	int eX, eY, DX, DY;
 	void collition(void);
-	
+	bool hor = true, der = true;	
 public:
 	Ship(int _x, int _y){
 		x = _x;
@@ -71,7 +73,6 @@ public:
 	}
 	~Ship(void){}
 	void keyMove(void);
-	void botMove(int enemyX, int enemyY, int enemyXdir, int enemyYdir);
 	void move(int key);
 	int X(void){return x;}
 	int Y(void){return y;}
@@ -111,96 +112,162 @@ void Ship::collition(void){
 	}
 	return;
 }
-void Ship::botMove(int enemyX, int enemyY,int enemyXdir,int enemyYdir){
-	eX = enemyX;
-	eY = enemyY;
-	DX = enemyXdir;
-	DY = enemyYdir;
-	int key = 0;
-	int des = rand()%2;
-	int mdes = rand()%2;
-	if(x == eX && ((DX == dx && dy == DY) || (dx == DX*-1 && DY*-1 == dy))){
-		if(mdes == 0){
-			key = 32;
-			return;
-		}
-		else{
-			if(des == 1){
-				key = A;
-			}
-			else{
-				key = D;
-			}
-		}
+class Queen{
+private:
+	int x, y;
+	int der = 1;
+	int cooldown = 0;
+public:
+	Queen(int _x, int _y){
+		x = _x;
+		y = _y;
 	}
-	if(y == eY && ((DX == dx && dy == DY) || (dx == DX*-1 && DY*-1 == dy))){
-		if(mdes == 0){
-			key = 32;
-			return;
-		}
-		else{
-			if(des == 1){
-				key = W;
-			}
-			else{
-				key = S;
-			}
-		}
+	~Queen(void){}
+	int X(void){return x;}
+	int Y(void){return y;}
+	void move(int eX);
+	void displayLive(void);
+	bool death = false;
+	int live = 3;
+	bool shooting = false;
+	bool minion = false;
+};
+void Queen::displayLive(void){
+	gotoxy(2,0);printf("                      ");
+	gotoxy(2,0);printf("Queen's live: %i", live);
+	return;
+}
+void Queen::move(int eX){
+	gotoxy(x,y);printf("%c", 32);
+	x += der;
+	if(x <=2 || x >= 78){
+		der *= -1;
+		
 	}
-	if(x == 3){
-		key = D;
+	gotoxy(x,y);printf("%c",190);
+	if(eX == x){
+		shooting = true;
 	}
-	else if(x == 77){
-		key = A;
+	/*if(cooldown = 500){
+		minion = true;
+		cooldown = 0;
 	}
-	if(y == 3){
-		key = S;
+	else{
+		cooldown += 1;
+	}*/
+	return;
+}
+
+class Minion{
+private:
+	int x,y;
+	int cooldown = 0;
+	int coolmax = rand()%20+10;
+	void collition(void);
+public:
+	Minion(int _x, int _y){
+		x = _x;
+		y = _y;
 	}
-	else if(y == 21){
-		key = W;
+	~Minion(void){}
+	int X(void){return x;}
+	int Y(void){return y;}
+	void move(void);
+	bool shooting = false;
+	bool death = false;
+
+};
+void Minion::move(void){
+	gotoxy(x,y);printf("%c", 32);
+	if(cooldown == coolmax){
+		shooting = true;
+		cooldown = 0;
 	}
-	Ship::move(key);
+	else{
+		cooldown += 1;
+	}
+	y += 1;
+	Minion::collition();
+	if(!death){
+		gotoxy(x,y);printf("%c", 223);
+	}
+	return;
+}
+void Minion::collition(void){
+	if(y >= 22){
+		death = true;
+	}
 	return;
 }
 
 int main(){
 	list<Bullet*> bullets;
 	list<Bullet*>::iterator bit; //bit significa bullet iterator
+	list<Minion*> minions;
+	list<Minion*>::iterator mit;//mit == minion iterator.
 	hideCursor();
 	cls();
 	drawBorders(205,219);
 	Ship ms (39,18);
-	Ship es (39, 6);
-	while(!ms.death && !es.death){
+	Queen q (39, 4);
+	q.displayLive();
+	while(!ms.death && !q.death){
 		ms.keyMove();
-		es.botMove(ms.X(), ms.Y(), ms.XD(), ms.YD());
+		q.move(ms.X());
+		
 		if(ms.shooting){
 			bullets.push_back(new Bullet(ms.X()+(ms.XD()*2),ms.Y()+(ms.YD() *2),ms.XD(), ms.YD()));
             ms.shooting = false;			
 		}
-		if(es.shooting){
-			bullets.push_back(new Bullet(es.X()+(es.XD()*2),es.Y()+(es.YD() *2),es.XD(), es.YD()));
-            es.shooting = false;	
+		if(q.shooting){
+			bullets.push_back(new Bullet(q.X(),q.Y()+1,0,1));
+			q.shooting = false;
 		}
+		if(q.minion){
+			minions.push_back(new Minion(q.X(),q.Y()));
+		}
+		for(mit=minions.begin();mit!=minions.end();mit++){
+			(*mit)->move();
+			if((*mit)->shooting){
+				bullets.push_back(new Bullet((*mit)->X()-1,(*mit)->Y(),1,0));
+			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y(),0,1));
+			}
+			for(bit=bullets.begin();bit!=bullets.end();bit++){
+				if((*bit)->X() == (*mit)->X() && (*bit)->Y() == (*mit)->Y()){
+					(*mit)->death = true;
+					(*bit)->death = true;
+					delete(*mit);
+					mit = minions.erase(mit);
+					break;
+				}
+			}
+		}
+
 		for(bit=bullets.begin();bit!=bullets.end();bit++){
 			(*bit)->move();
 			if((ms.X() == (*bit)->X()) && (ms.Y() == (*bit)->Y())){
 				ms.death = true;
 			}
-			else if((es.X() == (*bit)->X()) && (es.Y() == (*bit)->Y())){
-				es.death = true;
+			if(q.X() == (*bit)->X() && q.Y() == (*bit)->Y()){
+				q.live -= 1;
+				q.displayLive();
 			}
 			if((*bit)->death){
+				gotoxy((*bit)->X(),(*bit)->Y());printf("%c", 32);
 				delete(*bit);
 				bit = bullets.erase(bit);
 			}
+			
+		}
+		if(q.live <= 0){
+				q.death = true;
 		}
 		Sleep(100);
 	}
 	cls();
 	drawBorders(190, 190);
 	gotoxy(35, 12);
-	if(es.death){
+	if(q.death){
 		printf(" You  Won");
 	}
 	else{
