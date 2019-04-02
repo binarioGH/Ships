@@ -117,6 +117,7 @@ private:
 	int x, y;
 	int der = 1;
 	int cooldown = 0;
+	int finalcooldown = 0;
 public:
 	Queen(int _x, int _y){
 		x = _x;
@@ -131,6 +132,7 @@ public:
 	int live = 3;
 	bool shooting = false;
 	bool minion = false;
+	bool finalAttack = false;
 };
 void Queen::displayLive(void){
 	gotoxy(2,0);printf("                      ");
@@ -140,7 +142,7 @@ void Queen::displayLive(void){
 void Queen::move(int eX){
 	gotoxy(x,y);printf("%c", 32);
 	x += der;
-	if(x <=2 || x >= 78){
+	if(x <= 3 || x >= 77){
 		der *= -1;
 		
 	}
@@ -148,13 +150,20 @@ void Queen::move(int eX){
 	if(eX == x){
 		shooting = true;
 	}
-	/*if(cooldown = 500){
+	if(cooldown == 30){
 		minion = true;
 		cooldown = 0;
 	}
 	else{
 		cooldown += 1;
-	}*/
+	}
+	if(finalcooldown == 100){
+		finalAttack = true;
+		finalcooldown = 0;
+	}
+	else{
+		finalcooldown += 1;
+	}
 	return;
 }
 
@@ -162,7 +171,6 @@ class Minion{
 private:
 	int x,y;
 	int cooldown = 0;
-	int coolmax = rand()%20+10;
 	void collition(void);
 public:
 	Minion(int _x, int _y){
@@ -179,7 +187,7 @@ public:
 };
 void Minion::move(void){
 	gotoxy(x,y);printf("%c", 32);
-	if(cooldown == coolmax){
+	if(cooldown == 5){
 		shooting = true;
 		cooldown = 0;
 	}
@@ -211,6 +219,7 @@ int main(){
 	Ship ms (39,18);
 	Queen q (39, 4);
 	q.displayLive();
+	int x;
 	while(!ms.death && !q.death){
 		ms.keyMove();
 		q.move(ms.X());
@@ -223,14 +232,26 @@ int main(){
 			bullets.push_back(new Bullet(q.X(),q.Y()+1,0,1));
 			q.shooting = false;
 		}
+		if(q.finalAttack){
+			for(x=0;x<=4;x+=1){
+				minions.push_back(new Minion(x+37, 5));
+			}
+			q.finalAttack = false;
+		}
 		if(q.minion){
-			minions.push_back(new Minion(q.X(),q.Y()));
+			minions.push_back(new Minion(q.X(),q.Y()+1));
+			q.minion = false;
 		}
 		for(mit=minions.begin();mit!=minions.end();mit++){
 			(*mit)->move();
 			if((*mit)->shooting){
 				bullets.push_back(new Bullet((*mit)->X()-1,(*mit)->Y(),1,0));
-			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y(),0,1));
+			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y(),-1,0));
+			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,-1));
+			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,-1));
+			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,1));
+			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y()-1,1,-1));
+			    (*mit)->shooting = false;
 			}
 			for(bit=bullets.begin();bit!=bullets.end();bit++){
 				if((*bit)->X() == (*mit)->X() && (*bit)->Y() == (*mit)->Y()){
