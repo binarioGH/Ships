@@ -24,19 +24,22 @@ private:
 	int dx, dy;
 	void collition(void);
 public:
-	Bullet(int _x, int _y, int _dx, int _dy){
+	int type;
+	Bullet(int _x, int _y, int _dx, int _dy, int t){
 		x = _x;
 		y = _y;
 		dx = _dx;
 		dy = _dy;
+		type = t;
 	}
 	void move(void);
 	int X(void){return x;}
 	int Y(void){return y;}
 	bool death = false;
+	
 };
 void Bullet::collition(void){
-	if((x>77 || x<3) || (y<3 || y>21)){
+	if((x>=76 || x<=3) || (y<=3 || y>=20)){
 		death = true;
 	}
 	return;
@@ -118,6 +121,7 @@ private:
 	int der = 1;
 	int cooldown = 0;
 	int finalcooldown = 0;
+
 public:
 	Queen(int _x, int _y){
 		x = _x;
@@ -126,20 +130,22 @@ public:
 	~Queen(void){}
 	int X(void){return x;}
 	int Y(void){return y;}
-	void move(int eX);
+	void move(int eX, int eY);
 	void displayLive(void);
 	bool death = false;
 	int live = 3;
 	bool shooting = false;
 	bool minion = false;
 	bool finalAttack = false;
+	bool protection = false;
+	bool p = false;
 };
 void Queen::displayLive(void){
-	gotoxy(2,0);printf("                      ");
-	gotoxy(2,0);printf("Queen's live: %i", live);
+	gotoxy(2,24);printf("                                                                          ");
+	gotoxy(2,24);printf("Queen's live: %i", live);
 	return;
 }
-void Queen::move(int eX){
+void Queen::move(int eX, int eY){
 	gotoxy(x,y);printf("%c", 32);
 	x += der;
 	if(x <= 3 || x >= 77){
@@ -150,19 +156,25 @@ void Queen::move(int eX){
 	if(eX == x){
 		shooting = true;
 	}
-	if(cooldown == 30){
-		minion = true;
-		cooldown = 0;
+	if(eY == 7 && !p){
+		protection = true;
+		p = true;
 	}
-	else{
-		cooldown += 1;
-	}
-	if(finalcooldown == 100){
-		finalAttack = true;
-		finalcooldown = 0;
-	}
-	else{
-		finalcooldown += 1;
+	if(!protection ){
+		if(cooldown == 30){
+		    minion = true;
+		    cooldown = 0;
+	    }
+	    else{
+		    cooldown += 1;
+		}
+	    if(finalcooldown == 100){
+		    finalAttack = true;
+		    finalcooldown = 0;
+	    }
+	    else{
+		    finalcooldown += 1;
+	    }
 	}
 	return;
 }
@@ -207,8 +219,66 @@ void Minion::collition(void){
 	}
 	return;
 }
+class Sentry{
+private:
+	int x,y;
+	int xd;
+	int d;
+	void collition(void);
+public:
+	Sentry(int _x, int _y, int _d){
+		x = _x;
+		y = _y;
+		xd = _d *-1;
+		d = _d;
+	}
+	~Sentry(void){}
+	void move(void);
+	int X(void){return x;}
+	int Y(void){return y;}
+	int XD(void){return xd;}
+};
+void Sentry::move(void){
+	gotoxy(x,y);printf("%c", 32); 
+	Sentry::collition();
+	y += d;
+	gotoxy(x,y);printf("%c",206);
+	return;
+}
+void Sentry::collition(void){
+	if(y==6 || y == 20){
+		d *= -1;
+	}
+	return;
+}
 
+class Protection{
+private:
+	int x,y;
+public:
+	Protection(int _x, int _y){
+		x = _x;
+		y = _y;
+		Sleep(10);
+		gotoxy(x,y);printf("%c",205); 
+	}
+	~Protection(void){
+		gotoxy(x,y);printf("%c",126);
+		Sleep(10);
+		gotoxy(x,y);printf("%c", 32);
+	}
+	void draw(void){
+		gotoxy(x,y);printf("%c",205);
+	}
+	int lives = 3;
+	int X(void){return x;}
+	int Y(void){return y;}
+};
 int main(){
+	list<Protection*> protectors;
+	list<Protection*>::iterator pit;
+	list<Sentry*> sentrys;
+	list<Sentry*>::iterator sit;
 	list<Bullet*> bullets;
 	list<Bullet*>::iterator bit; //bit significa bullet iterator
 	list<Minion*> minions;
@@ -220,16 +290,16 @@ int main(){
 	Queen q (39, 4);
 	q.displayLive();
 	int x;
+	int pp = 0;
 	while(!ms.death && !q.death){
 		ms.keyMove();
-		q.move(ms.X());
-		
+		q.move(ms.X(), ms.Y());
 		if(ms.shooting){
-			bullets.push_back(new Bullet(ms.X()+(ms.XD()*2),ms.Y()+(ms.YD() *2),ms.XD(), ms.YD()));
+			bullets.push_back(new Bullet(ms.X()+(ms.XD()*2),ms.Y()+(ms.YD() *2),ms.XD(), ms.YD(), 1));
             ms.shooting = false;			
 		}
 		if(q.shooting){
-			bullets.push_back(new Bullet(q.X(),q.Y()+1,0,1));
+			bullets.push_back(new Bullet(q.X(),q.Y()+1,0,1, 0));
 			q.shooting = false;
 		}
 		if(q.finalAttack){
@@ -238,6 +308,14 @@ int main(){
 			}
 			q.finalAttack = false;
 		}
+		if(q.protection){
+			int px; 
+			for(px=3;px<78;px++){
+				protectors.push_back(new Protection(px,5));
+			}
+			sentrys.push_back(new Sentry(3,6,1));
+			sentrys.push_back(new Sentry(77,20,-1));
+		}
 		if(q.minion){
 			minions.push_back(new Minion(q.X(),q.Y()+1));
 			q.minion = false;
@@ -245,12 +323,12 @@ int main(){
 		for(mit=minions.begin();mit!=minions.end();mit++){
 			(*mit)->move();
 			if((*mit)->shooting){
-				bullets.push_back(new Bullet((*mit)->X()-1,(*mit)->Y(),1,0));
-			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y(),-1,0));
-			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,-1));
-			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,-1));
-			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,1));
-			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y()-1,1,-1));
+				bullets.push_back(new Bullet((*mit)->X()-1,(*mit)->Y(),1,0, 0));
+			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y(),-1,0, 0));
+			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,-1, 0));
+			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,-1, 0));
+			    bullets.push_back(new Bullet((*mit)->X(),(*mit)->Y()+1,-1,1, 0));
+			    bullets.push_back(new Bullet((*mit)->X()+1,(*mit)->Y()-1,1,-1, 0));
 			    (*mit)->shooting = false;
 			}
 			for(bit=bullets.begin();bit!=bullets.end();bit++){
@@ -262,6 +340,18 @@ int main(){
 					break;
 				}
 			}
+			for(sit=sentrys.begin();sit!=sentrys.end();sit++){
+				if((*sit)->X() == ms.X()){
+					bullets.push_back(new Bullet((*sit)->X(), (*sit)->Y(), (*sit)->XD(),0,0));
+				}
+				if(((*sit)->X() == (*bit)->X() && (*sit)->Y() == (*bit)->Y()) && (*bit)->type == 1){
+					delete(*bit);
+					bit = bullets.erase(bit);
+					delete(*sit);
+					sit = sentrys.erase(sit);
+				}
+				
+			}
 		}
 
 		for(bit=bullets.begin();bit!=bullets.end();bit++){
@@ -269,7 +359,7 @@ int main(){
 			if((ms.X() == (*bit)->X()) && (ms.Y() == (*bit)->Y())){
 				ms.death = true;
 			}
-			if(q.X() == (*bit)->X() && q.Y() == (*bit)->Y()){
+			if(q.X() == (*bit)->X() && q.Y() == (*bit)->Y() && (*bit)->type == 1){
 				q.live -= 1;
 				q.displayLive();
 			}
@@ -278,13 +368,39 @@ int main(){
 				delete(*bit);
 				bit = bullets.erase(bit);
 			}
-			
+		    pp = 0;
+			for(pit=protectors.begin();pit != protectors.end();pit++){
+				pp += 1;
+				if((*pit)->X() == (*bit)->X() && (*pit)->Y() == (*bit)->Y()){
+					delete(*bit);
+					bit = bullets.erase(bit);
+					(*pit)->lives -= 1;
+					(*pit)->draw();
+					if((*pit)->lives <= 0){
+						delete(*pit);
+						pit = protectors.erase(pit);
+					}
+				}
+			}			
+		}
+		if(pp == 0){
+			q.p = false;
 		}
 		if(q.live <= 0){
 				q.death = true;
 		}
 		Sleep(100);
 	}
+	for(bit=bullets.begin();bit!=bullets.end();bit++){
+		delete(*bit);
+		bit = bullets.erase(bit);
+	}
+	for(mit=minions.begin();mit!=minions.end();mit++){
+		delete(*mit);
+		mit = minions.erase(mit);
+	}
+	delete &ms;
+	delete &q;
 	cls();
 	drawBorders(190, 190);
 	gotoxy(35, 12);
